@@ -63,12 +63,7 @@ void setup() {
 const int initial = 250;
 int d= initial; //inital speed
 
-void loop() {
- 
-  b.move(); //determine where the ball should be
-  
-  lc.setLed(0,b.gety(),b.getx(),true);  //turn on the LED representing the ball
-  
+void changeSpeed(){
   currentmil = millis();
   if(currentmil - startmil >= period){  //has 5 seconds passed?
     if(d > 50){
@@ -76,17 +71,12 @@ void loop() {
     }
     startmil = currentmil;  //count a new 5 seconds starting from here
   }
-  delay(d); //control the speed of the game
-  
-  lc.setLed(0,b.gety(),b.getx(),false);//turn off the LED representing the ball
-  
-  if(b.getx()+1 == 7 && b.gety()+1   == 6){ //"corner" case
-      b.setY(5);
-      b.setX(5);
-     }
-     
-  if(b.getx() == 7){  //you lost
-    highscore = score > highscore ? score:highscore;  //check to see if your score is now highscore
+}
+
+void lost(){
+    if(b.getx() == 7){  //you lost
+
+  highscore = score > highscore ? score:highscore;  //check to see if your score is now highscore
     
     d=initial;
     
@@ -107,22 +97,20 @@ void loop() {
     l.set(3,4,5);
     delay(3000);
     lc.clearDisplay(0);
-  }
+    }
+}
 
-  //if the ball hits the line
+void lineTouch(){
+    //if the ball hits the line
   if (b.getx()+1 == 7 && (b.gety()+1 <=l.getxr() && b.gety()+1 >= l.getxl())) {
       ++score;
       b.setX(b.getx()-1);
       b.setXdir(-1);
-      
-    }
-    
-  //line LEDs
-  lc.setLed(0,l.getxl(),7,false);
-  lc.setLed(0,l.getx(),7,false);
-  lc.setLed(0,l.getxr(),7,false);
+  }
+}
 
-  switch(controller_status){  //which control method?
+void control(){
+   switch(controller_status){  //which control method?
     
     case IRremotee: //if you want to play with an IR remote
       if (irrecv.decode(&results)){
@@ -147,11 +135,48 @@ void loop() {
         l.shiftLeft();
       }
   }
+}
+
+void  setLine(bool bl){
+  //line LEDs
+  lc.setLed(0,l.getxl(),7,bl);
+  lc.setLed(0,l.getx(),7,bl);
+  lc.setLed(0,l.getxr(),7,bl);
+}
+
+void setBall(bool bl){
+   lc.setLed(0,b.gety(),b.getx(),bl); 
+}
+
+void cornerCase(){
+  if(b.getx()+1 == 7 && b.gety()+1   == 6){ //"corner" case
+      b.setY(5);
+      b.setX(5);
+     }
+}
+
+void loop() {
+ 
+  b.move(); //determine where the ball should be
   
-  lc.setLed(0,l.getxl(),7,true);
-  lc.setLed(0,l.getx(),7,true);
-  lc.setLed(0,l.getxr(),7,true);
-   
+  setBall(true);  //turn on the LED representing the ball
   
+  changeSpeed();  //https://en.wikipedia.org/wiki/Hamada_Helal
+  
+  delay(d); //control the speed of the game
+  
+  setBall(false);//turn off the LED representing the ball
+  
+  cornerCase(); //fix my bad logic
+  
+  lost(); //you !won
+
+  lineTouch();  //did the ball touch the line?
+  
+  setLine(false); //old line off
+  
+  control();  //input from controller
+  
+  setLine(true);  //new line on 
    
 }
