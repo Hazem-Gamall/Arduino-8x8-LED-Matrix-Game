@@ -67,7 +67,7 @@ void changeSpeed(){
   currentmil = millis();
   if(currentmil - startmil >= period){  //has 5 seconds passed?
     if(d > 50){
-      d -= 10;
+      d -= 20;
     }
     startmil = currentmil;  //count a new 5 seconds starting from here
   }
@@ -102,7 +102,7 @@ void lost(){
 
 void lineTouch(){
     //if the ball hits the line
-  if (b.getx()+1 == 7 && (b.gety()+1 <=l.getxr() && b.gety()+1 >= l.getxl())) {
+  if (b.getx()+1 == 7 && (b.gety() <=l.getxr() && b.gety()+1 >= l.getxl())) {
       ++score;
       b.setX(b.getx()-1);
       b.setXdir(-1);
