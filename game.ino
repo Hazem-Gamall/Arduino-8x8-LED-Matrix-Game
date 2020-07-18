@@ -66,7 +66,7 @@ int d= initial; //inital speed
 void changeSpeed(){
   currentmil = millis();
   if(currentmil - startmil >= period){  //has 5 seconds passed?
-    if(d > 50){
+    if(d > 75){
       d -= 20;
     }
     startmil = currentmil;  //count a new 5 seconds starting from here
@@ -167,7 +167,7 @@ void loop() {
   
   setBall(false);//turn off the LED representing the ball
   
-  cornerCase(); //fix my bad logic
+  //cornerCase(); //fix my bad logic
   
   lost(); //you !won
 
