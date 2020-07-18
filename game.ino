@@ -60,8 +60,8 @@ void setup() {
   Serial.begin(9600);
   startmil = millis();
 }
-
-int d= 250; //inital speed
+const int initial = 250;
+int d= initial; //inital speed
 
 void loop() {
  
@@ -88,7 +88,7 @@ void loop() {
   if(b.getx() == 7){  //you lost
     highscore = score > highscore ? score:highscore;  //check to see if your score is now highscore
     
-    d=500;
+    d=initial;
     
     printLetter(L,5); //tAkE tHe L
 
@@ -105,7 +105,7 @@ void loop() {
     b.setX(0);
     b.setY(0);
     l.set(3,4,5);
-    delay(5000);
+    delay(3000);
     lc.clearDisplay(0);
   }
 
