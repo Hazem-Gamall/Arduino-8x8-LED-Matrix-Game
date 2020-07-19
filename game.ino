@@ -11,6 +11,18 @@ IRrecv irrecv(RECV_PIN);
 decode_results results; //decode sensor input
 unsigned long prevSignal;
 
+byte digits[10][8] = {{B01111100,B01000100,B01111100},
+{B00100100,B01111100,B00000100}
+,{B00100100,B01001100,B00110100}
+,{B01010100,B01010100,B01111100}
+,{B01110000,B00010000,B01111100}
+,{B01110100,B01010100,B01011100}
+,{B01111100,B01010100,B01011100}
+,{B01000000,B01000000,B01111100}
+,{B01111100,B01010100,B01111100}
+,{B01110100,B01010100,B01111100}};
+
+
 //pushButton pins
 int leftButtonPin;
 int rightButtonPin;
@@ -40,11 +52,6 @@ LedControl lc = LedControl(din,clk,cs,0);
 ball b(0,0); //initialize the ball with the (0,0) coordinates
 line l(3,4,5);//initialize the line with the (3,4,5) LEDs on the 8th row
 
-void printLetter(byte letter[], int n){ //function that takes a byte letter array and prints the equivalent letter
-  for(int i =n; i >0 ; --i){
-    lc.setRow(0,i,letter[n-i]);
-  }
-}
 
 void setup() {
   //pinMode(leftButtonPin,INPUT);
@@ -73,23 +80,48 @@ void changeSpeed(){
   }
 }
 
+void printDigit(byte letter[], int n){
+    for(int i =n; i >0 ; --i){
+    lc.setRow(0,i,letter[n-i]);
+  }
+}
+
+void printScore(int score){ //function that takes a byte letter array and prints the equivalent letter
+  int tens, ones;
+  
+  if(score > 9){
+    ones = score%10;
+    score = score/10;
+    tens = score;
+    int ar[2] = {ones,tens};
+    int ord = 7;
+    for(int i = 1; i>= 0; --i){
+      printDigit(digits[ar[i]],ord);
+      ord -=4;
+    }
+  }else{
+    printDigit(digits[score],5);
+  }
+  
+}
+
+
 void lost(){
     if(b.getx() == 7){  //you lost
 
-  highscore = score > highscore ? score:highscore;  //check to see if your score is now highscore
+    highscore = score > highscore ? score:highscore;  //check to see if your score is now highscore
     
     d=initial;
     
-    printLetter(L,5); //tAkE tHe L
 
-    //time to be proud
-    Serial.print("Your score: ");
-    Serial.println(score);
+    printScore(score);
     score =0; //for next match
-
-    //time to not be proud
-    Serial.print("Highest score: ");
-    Serial.println(highscore);
+    delay(3000);
+    
+    lc.clearDisplay(0);
+    delay(100);
+    
+    printScore(highscore);
     
     //reset
     b.setX(0);
