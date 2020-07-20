@@ -11,6 +11,18 @@ IRrecv irrecv(RECV_PIN);
 decode_results results; //decode sensor input
 unsigned long prevSignal;
 
+byte digits[10][8] = {{B01111100,B01000100,B01111100},
+{B00100100,B01111100,B00000100}
+,{B00100100,B01001100,B00110100}
+,{B01010100,B01010100,B01111100}
+,{B01110000,B00010000,B01111100}
+,{B01110100,B01010100,B01011100}
+,{B01111100,B01010100,B01011100}
+,{B01000000,B01000000,B01111100}
+,{B01111100,B01010100,B01111100}
+,{B01110100,B01010100,B01111100}};
+
+
 //pushButton pins
 int leftButtonPin;
 int rightButtonPin;
@@ -40,11 +52,6 @@ LedControl lc = LedControl(din,clk,cs,0);
 ball b(0,0); //initialize the ball with the (0,0) coordinates
 line l(3,4,5);//initialize the line with the (3,4,5) LEDs on the 8th row
 
-void printLetter(byte letter[], int n){ //function that takes a byte letter array and prints the equivalent letter
-  for(int i =n; i >0 ; --i){
-    lc.setRow(0,i,letter[n-i]);
-  }
-}
 
 void setup() {
   //pinMode(leftButtonPin,INPUT);
@@ -60,69 +67,82 @@ void setup() {
   Serial.begin(9600);
   startmil = millis();
 }
+const int initial = 250;
+int d= initial; //inital speed
 
-int d= 250; //inital speed
-
-void loop() {
- 
-  b.move(); //determine where the ball should be
-  
-  lc.setLed(0,b.gety(),b.getx(),true);  //turn on the LED representing the ball
-  
+void changeSpeed(){
   currentmil = millis();
   if(currentmil - startmil >= period){  //has 5 seconds passed?
-    if(d > 50){
-      d -= 10;
+    if(d > 75){
+      d -= 20;
     }
     startmil = currentmil;  //count a new 5 seconds starting from here
   }
-  delay(d); //control the speed of the game
+}
+
+void printDigit(byte letter[], int n){
+    for(int i =n; i >0 ; --i){
+    lc.setRow(0,i,letter[n-i]);
+  }
+}
+
+void printScore(int score){ //function that takes a byte letter array and prints the equivalent letter
+  int tens, ones;
   
-  lc.setLed(0,b.gety(),b.getx(),false);//turn off the LED representing the ball
+  if(score > 9){
+    ones = score%10;
+    score = score/10;
+    tens = score;
+    int ar[2] = {ones,tens};
+    int ord = 7;
+    for(int i = 1; i>= 0; --i){
+      printDigit(digits[ar[i]],ord);
+      ord -=4;
+    }
+  }else{
+    printDigit(digits[score],5);
+  }
   
-  if(b.getx()+1 == 7 && b.gety()+1   == 6){ //"corner" case
-      b.setY(5);
-      b.setX(5);
-     }
-     
-  if(b.getx() == 7){  //you lost
+}
+
+
+void lost(){
+    if(b.getx() == 7){  //you lost
+
     highscore = score > highscore ? score:highscore;  //check to see if your score is now highscore
     
-    d=500;
+    d=initial;
     
-    printLetter(L,5); //tAkE tHe L
 
-    //time to be proud
-    Serial.print("Your score: ");
-    Serial.println(score);
+    printScore(score);
     score =0; //for next match
-
-    //time to not be proud
-    Serial.print("Highest score: ");
-    Serial.println(highscore);
+    delay(3000);
+    
+    lc.clearDisplay(0);
+    delay(100);
+    
+    printScore(highscore);
     
     //reset
     b.setX(0);
     b.setY(0);
     l.set(3,4,5);
-    delay(5000);
+    delay(3000);
     lc.clearDisplay(0);
-  }
+    }
+}
 
-  //if the ball hits the line
-  if (b.getx()+1 == 7 && (b.gety()+1 <=l.getxr() && b.gety()+1 >= l.getxl())) {
+void lineTouch(){
+    //if the ball hits the line
+  if (b.getx()+1 == 7 && (b.gety() <=l.getxr() && b.gety()+1 >= l.getxl())) {
       ++score;
       b.setX(b.getx()-1);
       b.setXdir(-1);
-      
-    }
-    
-  //line LEDs
-  lc.setLed(0,l.getxl(),7,false);
-  lc.setLed(0,l.getx(),7,false);
-  lc.setLed(0,l.getxr(),7,false);
+  }
+}
 
-  switch(controller_status){  //which control method?
+void control(){
+   switch(controller_status){  //which control method?
     
     case IRremotee: //if you want to play with an IR remote
       if (irrecv.decode(&results)){
@@ -147,11 +167,48 @@ void loop() {
         l.shiftLeft();
       }
   }
+}
+
+void  setLine(bool bl){
+  //line LEDs
+  lc.setLed(0,l.getxl(),7,bl);
+  lc.setLed(0,l.getx(),7,bl);
+  lc.setLed(0,l.getxr(),7,bl);
+}
+
+void setBall(bool bl){
+   lc.setLed(0,b.gety(),b.getx(),bl); 
+}
+
+void cornerCase(){
+  if(b.getx()+1 == 7 && b.gety()+1   == 6){ //"corner" case
+      b.setY(5);
+      b.setX(5);
+     }
+}
+
+void loop() {
+ 
+  b.move(); //determine where the ball should be
   
-  lc.setLed(0,l.getxl(),7,true);
-  lc.setLed(0,l.getx(),7,true);
-  lc.setLed(0,l.getxr(),7,true);
-   
+  setBall(true);  //turn on the LED representing the ball
   
+  changeSpeed();  //https://en.wikipedia.org/wiki/Hamada_Helal
+  
+  delay(d); //control the speed of the game
+  
+  setBall(false);//turn off the LED representing the ball
+  
+  //cornerCase(); //fix my bad logic
+  
+  lost(); //you !won
+
+  lineTouch();  //did the ball touch the line?
+  
+  setLine(false); //old line off
+  
+  control();  //input from controller
+  
+  setLine(true);  //new line on 
    
 }
