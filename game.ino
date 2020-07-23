@@ -30,6 +30,7 @@ int rightButtonPin;
 //which method of control to use
 enum controller{pushButtons,IRremotee};
 controller controller_status;
+
 const int din = 2;
 const int cs = 3;
 const int clk = 4;
@@ -108,26 +109,36 @@ void printScore(int score){ //function that takes a byte letter array and prints
 
 void lost(){
     if(b.getx() == 7){  //you lost
-
-    highscore = score > highscore ? score:highscore;  //check to see if your score is now highscore
+      
+    lc.clearDisplay(0);
+    
+    if(score> highscore){
+      highscore = score;
+      score =0;
+      for(int i =0; i < 3; ++i){
+        printScore(highscore);    
+        delay(500);
+        lc.clearDisplay(0);
+        delay(500);
+      }
+    }else{
+      printScore(score);
+      score =0; //for next match
+      delay(2000);
+      
+      lc.clearDisplay(0);
+      delay(100);
+      
+      printScore(highscore);
+      delay(2000);
+    }
     
     d=initial;
-    
-
-    printScore(score);
-    score =0; //for next match
-    delay(3000);
-    
-    lc.clearDisplay(0);
-    delay(100);
-    
-    printScore(highscore);
     
     //reset
     b.setX(0);
     b.setY(0);
     l.set(3,4,5);
-    delay(3000);
     lc.clearDisplay(0);
     }
 }
@@ -146,10 +157,11 @@ void control(){
     
     case IRremotee: //if you want to play with an IR remote
       if (irrecv.decode(&results)){
-        Serial.println(results.value,HEX);  //debugging
+        
         if(results.value == 0xFFFFFFFF){
           results.value = prevSignal;
         }
+        
         if(results.value == 0xFF10EF || results.value == 0x8C22657B){ //the codes for the button chosen as left
           prevSignal = results.value;
           l.shiftLeft();
@@ -157,6 +169,7 @@ void control(){
           l.shiftRight();
           prevSignal = results.value;
         }
+        
         irrecv.resume(); // Receive the next value
       }
       break;
@@ -180,12 +193,6 @@ void setBall(bool bl){
    lc.setLed(0,b.gety(),b.getx(),bl); 
 }
 
-void cornerCase(){
-  if(b.getx()+1 == 7 && b.gety()+1   == 6){ //"corner" case
-      b.setY(5);
-      b.setX(5);
-     }
-}
 
 void loop() {
  
@@ -198,8 +205,6 @@ void loop() {
   delay(d); //control the speed of the game
   
   setBall(false);//turn off the LED representing the ball
-  
-  //cornerCase(); //fix my bad logic
   
   lost(); //you !won
 
